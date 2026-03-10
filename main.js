@@ -1,3 +1,4 @@
+const { timeStamp } = require("console");
 const fs = require("fs");
 
 // ============================================================
@@ -8,10 +9,14 @@ const fs = require("fs");
 // ============================================================
 function getShiftDuration(startTime, endTime) {
 
-    startSeconds = secondsConverterHelper(startTime);
-    endSeconds = secondsConverterHelper(endTime);
+   let startSeconds = secondsConverterHelper(startTime);
+   let endSeconds = secondsConverterHelper(endTime);
 
-    result = endSeconds - startSeconds;
+    if (endSeconds < startSeconds) {
+        endSeconds += 24 * 3600;
+    }
+
+   let result = endSeconds - startSeconds;
 
     return formatTime(result);
 
@@ -76,7 +81,32 @@ function formatTime(totalSeconds){
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getIdleTime(startTime, endTime) {
-    // TODO: Implement this function
+
+    let startSeconds = secondsConverterHelper(startTime);
+    let endSeconds = secondsConverterHelper(endTime);
+
+    const delivStart = Number(28800); // 8:00:00 am
+    const delivEnd = Number(79200); // 10:00:00 pm
+
+    let idleTimeAfter = Number(0);
+    let idleTimeBefore = Number(0);
+    
+    if (endSeconds < startSeconds){ // handles overnight edge case
+        endSeconds += 86400
+    }
+
+    if (startSeconds < delivStart){
+        idleTimeBefore =  delivStart - startSeconds ;  
+    }
+
+    if (endSeconds > delivEnd){
+        idleTimeAfter = endSeconds - delivEnd; 
+    }
+
+    let idleTime = idleTimeAfter + idleTimeBefore
+
+    return formatTime(idleTime);
+
 }
 
 // ============================================================
@@ -86,7 +116,8 @@ function getIdleTime(startTime, endTime) {
 // Returns: string formatted as h:mm:ss
 // ============================================================
 function getActiveTime(shiftDuration, idleTime) {
-    // TODO: Implement this function
+    let result = secondsConverterHelper(shiftDuration) - secondsConverterHelper(idleTime);
+    return formatTime(result);
 }
 
 // ============================================================
@@ -96,7 +127,26 @@ function getActiveTime(shiftDuration, idleTime) {
 // Returns: boolean
 // ============================================================
 function metQuota(date, activeTime) {
-    // TODO: Implement this function
+ 
+    const dailyQuota = secondsConverterHelper("08:24:00");
+    const eidQuota = secondsConverterHelper("06:00:00");
+    const eidStart = new Date("2025-04-10");
+    const eidEnd = new Date("2025-04-30");
+     
+    let activeSeconds = secondsConverterHelper(activeTime);
+    let currentDate = new Date(date);
+    
+    if ( activeSeconds< dailyQuota && !( currentDate >= eidStart && currentDate <= eidEnd)){
+        return false;
+    }
+
+    if (currentDate >= eidStart && currentDate <= eidEnd ){
+        if(eidQuota > activeSeconds){
+            return false;
+        }
+    }
+
+    return true;
 }
 
 // ============================================================
