@@ -156,7 +156,54 @@ function metQuota(date, activeTime) {
 // Returns: object with 10 properties or empty object {}
 // ============================================================
 function addShiftRecord(textFile, shiftObj) {
-    // TODO: Implement this function
+
+    let data = fs.readFileSync(textFile, "utf-8");
+    let rows = data.split("\n");
+
+    let lastDriver = -1;
+
+    for (let i = 0; i < rows.length; i++) {
+
+        if (rows[i].trim() === "") continue;
+
+        let parts = rows[i].split(",");
+
+        if (shiftObj.driverID === parts[0] && shiftObj.date === parts[2]) {
+            return {};
+        }
+
+        if (shiftObj.driverID === parts[0]) {
+            lastDriver = i;
+        }
+    }
+
+    shiftObj.shiftDuration = getShiftDuration(shiftObj.startTime, shiftObj.endTime);
+    shiftObj.idleTime = getIdleTime(shiftObj.startTime, shiftObj.endTime);
+    shiftObj.activeTime = getActiveTime(shiftObj.shiftDuration, shiftObj.idleTime);
+    shiftObj.metQuota = metQuota(shiftObj.date, shiftObj.activeTime);
+    shiftObj.hasBonus = false;
+
+    let newRecord =
+        shiftObj.driverID + "," +
+        shiftObj.driverName + "," +
+        shiftObj.date + "," +
+        shiftObj.startTime + "," +
+        shiftObj.endTime;
+
+    if (lastDriver === -1) {
+
+        fs.appendFileSync(textFile, "\n" + newRecord);
+
+    } else {
+
+        rows.splice(lastDriver + 1, 0, newRecord);
+
+        let newData = rows.join("\n");
+
+        fs.writeFileSync(textFile, newData);
+    }
+
+    return shiftObj;
 }
 
 // ============================================================
@@ -168,7 +215,22 @@ function addShiftRecord(textFile, shiftObj) {
 // Returns: nothing (void)
 // ============================================================
 function setBonus(textFile, driverID, date, newValue) {
-    // TODO: Implement this function
+    let data = fs.readFileSync(textFile, "utf-8");
+    let rows = data.split("\n");
+
+    for ( let i = 0; rows.length > i; i++){
+        
+        let parts = rows[i].split(",");
+        
+        if (parts[0] == driverID && parts[2] == date) {
+           parts[9] = newValue;
+           rows[i] = parts.join(",")
+        }
+    }
+
+    let newData = rows.join("\n");
+
+    fs.writeFileSync(textFile,newData);
 }
 
 // ============================================================
